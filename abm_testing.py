@@ -16,7 +16,6 @@ from utils import (
     classify_three_strategy_replicator,
     classify_two_strategy_dynamic,
     classify_two_strategy_replicator,
-    get_colors
 )
 
 
@@ -130,9 +129,9 @@ def plot_space(save_loc):
     plt.close()
 
 
-def plot_fixed_point_distance(save_loc, df, strategies):
+def print_fixed_point_distance(df):
     # Dataframe transforms
-    df = df.dropna()
+    df = df[df["time"] == df["time"].max()].dropna()
     df["Original"] = np.abs(df["frequency"] - df["fp"])
     df["Transformed"] = np.abs(df["frequency"] - df["on fp"])
     df = pd.melt(
@@ -141,32 +140,40 @@ def plot_fixed_point_distance(save_loc, df, strategies):
         value_vars=["Original", "Transformed"],
         var_name="Payoff Matrix",
         value_name="Distance",
+    ).reset_index()
+    print(
+        df[["Payoff Matrix", "Dynamic", "Distance"]]
+        .groupby(["Payoff Matrix", "Dynamic"])
+        .agg(["mean", "sem"])
     )
-    # Aggregated plot
+
+
+def plot_fixed_point_distance_over_time(save_loc, df, strategies):
+    # Dataframe transforms
+    df = df.dropna()
+    df["Original"] = np.abs(df["frequency"] - df["fp"])
+    df["Transformed"] = np.abs(df["frequency"] - df["on fp"])
+    df = pd.melt(
+        df,
+        id_vars=["Sample", "Dynamic", "time"],
+        value_vars=["Original", "Transformed"],
+        var_name="Payoff Matrix",
+        value_name="Distance",
+    )
+    df["Time"] = df["time"]
     fig, ax = plt.subplots(figsize=(4, 4))
-    sns.boxplot(data=df, x="Payoff Matrix", y="Distance", color="pink", linecolor="black", ax=ax)
-    sns.stripplot(data=df, x="Payoff Matrix", y="Distance", color="black", alpha=0.5, ax=ax)
-    ax.set(title=f"{strategies} Strategy Distances Between\nAnalytical and Empirical Fixed Point")
-    fig.tight_layout()
-    fig.patch.set_alpha(0)
-    fig.savefig(f"{save_loc}/distance_{strategies}.png", dpi=200)
-    plt.close()
-    # Split across dynamics plot
-    fig, ax = plt.subplots(figsize=(4, 4))
-    sns.boxplot(
-        data=df,
-        x="Payoff Matrix",
+    sns.lineplot(
+        data=df[df["Payoff Matrix"] == "Original"],
+        x="Time",
         y="Distance",
         hue="Dynamic",
-        hue_order=["Sensitive Wins", "Coexistence", "Resistant Wins"],
-        palette=get_colors(),
-        linecolor="black",
+        palette="Set2",
         ax=ax,
     )
     ax.set(title=f"{strategies} Strategy Distances Between\nAnalytical and Empirical Fixed Point")
     fig.tight_layout()
     fig.patch.set_alpha(0)
-    fig.savefig(f"{save_loc}/distance_{strategies}_dynamic.png", dpi=200)
+    fig.savefig(f"{save_loc}/distance_{strategies}_time_dynamic.png", dpi=200)
     plt.close()
 
 
@@ -176,7 +183,7 @@ def analyze_experiment(save_loc, strategies):
         if os.path.isfile(f"{save_loc}/{sample}"):
             continue
         df_s = pd.read_csv(f"{save_loc}/{sample}/summary.csv")
-        df_s = df_s[df_s["time"] == df_s["time"].max()] #TODO change to plot distance over simulation
+        df_s = df_s[df_s["time"] % 100 == 0]
         config = json.load(open(f"{save_loc}/{sample}/config.json"))
         payoff = np.array(config["payoff"]).reshape(
             len(config["init_freq"]), len(config["init_freq"])
@@ -199,7 +206,8 @@ def analyze_experiment(save_loc, strategies):
         if int(sample) % 10 == 0:
             plot_space(f"{save_loc}/{sample}")
     df = pd.concat(df)
-    plot_fixed_point_distance(save_loc, df.copy(), strategies)
+    plot_fixed_point_distance_over_time(save_loc, df.copy(), strategies)
+    print_fixed_point_distance(df.copy())
 
 
 def main():
@@ -207,12 +215,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-dir", "--data_dir", type=str, default="data/abm_test")
     parser.add_argument("-run_cmd", "--run_cmd", type=str, default="python3")
-    parser.add_argument("-strats", "--strategies", type=int, choices=[2, 3])
+    parser.add_argument("-strats", "--strategies", type=int, default=3, choices=[2, 3])
     parser.add_argument("-samples", "--num_samples", type=int, default=100)
     parser.add_argument("-l", "--grid", type=int, default=100)
     parser.add_argument("-r", "--radius", type=int, default=1)
-    parser.add_argument("-write", "--write_freq", type=int, default=100)
-    parser.add_argument("-steps", "--steps", type=int, default=1000)
+    parser.add_argument("-write", "--write_freq", type=int, default=5000)
+    parser.add_argument("-steps", "--steps", type=int, default=5000)
     args = parser.parse_args()
 
     save_loc = f"{args.data_dir}/{args.strategies}"

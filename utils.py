@@ -4,18 +4,6 @@ from scipy.linalg import eigvals
 from scipy.optimize import approx_fprime
 
 
-def get_colors(include_neutral=False):
-    colors = {
-        "Sensitive Wins": "#4C956C",
-        "Coexistence": "#C28367",
-        "Bistability": "#047495",
-        "Resistant Wins": "#EF7C8E",
-    }
-    if include_neutral:
-        colors["Neutrality"] = "#767567"
-    return colors
-
-
 def latin_hypercube_sample(num_samples, param_names, lower_bounds, upper_bounds, ints, seed):
     sampler = stats.qmc.LatinHypercube(d=len(lower_bounds), seed=seed)
     unscaled_sample = sampler.random(n=num_samples)
