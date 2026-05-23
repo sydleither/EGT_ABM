@@ -22,9 +22,9 @@ from utils import (
 def sample_three_strategy(seed, num_samples):
     samples = latin_hypercube_sample(
         num_samples,
-        ["P_00", "P_01", "P_02", "P_10", "P_11", "P_12", "P_20", "P_21"],
-        [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.0, 0.0],
-        [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.05, 0.05],
+        ["P_00", "P_01", "P_02", "P_10", "P_11", "P_12"],
+        [0.05, 0.05, 0.05, 0.05, 0.05, 0.05],
+        [0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
         [False] * 8,
         seed=seed,
     )
@@ -62,6 +62,8 @@ def run_experiment(save_loc, args):
                 (1 - init_freq_2) * (1 - init_freq_0),
                 init_freq_2,
             ]
+            sample["P_20"] = 0.0
+            sample["P_21"] = 0.0
             sample["P_22"] = 0.0
         sample_output = create_run_cmd(
             f"{save_loc}/{s}",
