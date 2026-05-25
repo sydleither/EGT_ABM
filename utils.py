@@ -35,7 +35,7 @@ def create_run_cmd(
     else:
         payoff = " ".join(
             [
-                str(x)
+                f"{x:5.3f}"
                 for x in [
                     sample["P_00"],
                     sample["P_01"],
@@ -49,7 +49,7 @@ def create_run_cmd(
                 ]
             ]
         )
-    init_freq = " ".join([str(x) for x in init_freq])
+    init_freq = " ".join([f"{x:7.5f}" for x in init_freq])
     sample_args = f"-loc {save_loc} -f {init_freq} -p {payoff}"
     return f"{run_cmd} {abm_path}/abm.py {abm_args} {sample_args}\n"
 

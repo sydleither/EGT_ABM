@@ -55,8 +55,8 @@ def run_experiment(save_loc, args):
             init_freq_0 = random.uniform(0.1, 0.9)
             init_freq = [init_freq_0, 1 - init_freq_0]
         else:
-            init_freq_0 = round(random.uniform(0.1, 0.9), 2)
-            init_freq_2 = round(random.uniform(0.99, 0.999), 3)
+            init_freq_0 = random.uniform(0.1, 0.9)
+            init_freq_2 = random.uniform(0.99, 0.999)
             init_freq = [
                 (1 - init_freq_2) * init_freq_0,
                 (1 - init_freq_2) * (1 - init_freq_0),
@@ -120,6 +120,7 @@ def ohtsuki_nowak_transform(payoff, radius):
 
 
 def plot_space(save_loc):
+    # TODO make paper-pretty
     coords = pd.read_csv(f"{save_loc}/coords.csv")
     times = sorted(coords["time"].unique())
     fig, ax = plt.subplots(1, len(times), figsize=(5 * len(times), 5))
@@ -224,8 +225,8 @@ def main():
     parser.add_argument("-samples", "--num_samples", type=int, default=100)
     parser.add_argument("-l", "--grid", type=int, default=100)
     parser.add_argument("-r", "--radius", type=int, default=1)
-    parser.add_argument("-write", "--write_freq", type=int, default=100)
-    parser.add_argument("-steps", "--steps", type=int, default=10)
+    parser.add_argument("-write", "--write_freq", type=int, default=10)
+    parser.add_argument("-steps", "--steps", type=int, default=100)
     args = parser.parse_args()
 
     save_loc = f"{args.data_dir}/{args.strategies}"
