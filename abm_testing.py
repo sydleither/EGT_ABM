@@ -22,10 +22,10 @@ from utils import (
 def sample_three_strategy(seed, num_samples):
     samples = latin_hypercube_sample(
         num_samples,
-        ["P_00", "P_01", "P_02", "P_10", "P_11", "P_12"],
-        [0.05, 0.05, 0.05, 0.05, 0.05, 0.05],
-        [0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
-        [False] * 6,
+        ["P_00", "P_01", "P_10", "P_11"],
+        [1, 1, 1, 1],
+        [4, 4, 4, 4],
+        [False] * 4,
         seed=seed,
     )
     return samples
@@ -55,16 +55,18 @@ def run_experiment(save_loc, args):
             init_freq_0 = random.uniform(0.1, 0.9)
             init_freq = [init_freq_0, 1 - init_freq_0]
         else:
-            init_freq_0 = random.uniform(0.1, 0.9)
-            init_freq_2 = random.uniform(0.9, 0.95)
+            init_freq_0 = round(random.uniform(0.1, 0.9), 2)
+            init_freq_2 = round(random.uniform(0.99, 0.999), 3)
             init_freq = [
                 (1 - init_freq_2) * init_freq_0,
                 (1 - init_freq_2) * (1 - init_freq_0),
                 init_freq_2,
             ]
-            sample["P_20"] = 0.0
-            sample["P_21"] = 0.0
-            sample["P_22"] = 0.0
+            sample["P_02"] = 2
+            sample["P_12"] = 2
+            sample["P_20"] = 1
+            sample["P_21"] = 1
+            sample["P_22"] = 0
         sample_output = create_run_cmd(
             f"{save_loc}/{s}",
             args.run_cmd,
@@ -76,6 +78,7 @@ def run_experiment(save_loc, args):
             args.radius,
             args.write_freq,
             args.steps,
+            "EGT_ABM"
         )
         run_output.append(sample_output)
 
@@ -221,8 +224,8 @@ def main():
     parser.add_argument("-samples", "--num_samples", type=int, default=100)
     parser.add_argument("-l", "--grid", type=int, default=100)
     parser.add_argument("-r", "--radius", type=int, default=1)
-    parser.add_argument("-write", "--write_freq", type=int, default=500)
-    parser.add_argument("-steps", "--steps", type=int, default=5000)
+    parser.add_argument("-write", "--write_freq", type=int, default=100)
+    parser.add_argument("-steps", "--steps", type=int, default=10)
     args = parser.parse_args()
 
     save_loc = f"{args.data_dir}/{args.strategies}"
