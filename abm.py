@@ -7,7 +7,7 @@ import numpy as np
 
 class ABM:
     def __init__(
-        self, save_loc, seed, grid_length, radius, init_freqs, payoff_matrix, grid_save_freq, steps
+        self, save_loc, seed, grid_length, radius, init_freqs, payoff_matrix, write_freq, steps
     ):
         # Model parameters
         self.save_loc = save_loc
@@ -18,19 +18,23 @@ class ABM:
         self.payoff_matrix = np.array(payoff_matrix).reshape(
             self.num_strategies, self.num_strategies
         )
-        self.grid_save_freq = grid_save_freq
+        self.write_freq = write_freq
         self.steps = steps
         self.neighborhoods = self.get_neighborhoods(grid_length)
         # Internal state tracking
         self.timestep = 0
-        self.grid = self.rng.choice(
-            range(self.num_strategies), size=(grid_length, grid_length), p=init_freqs
-        ).astype(np.uint8)
+        self.grid = self.create_grid(init_freqs, grid_length)
+        self.grid_history = []
         self.frequency_history = []
-        self.reproduction_history = []
-        # Initialize coords.csv
-        with open(f"{self.save_loc}/coords.csv", "w") as f:
-            f.write("time,x,y,strategy\n")
+
+    def create_grid(self, init_freqs, grid_length):
+        grid = []
+        for i, freq in enumerate(init_freqs):
+            num_type = int(np.round(freq * grid_length**2))
+            grid.extend([i] * num_type)
+        grid = np.array(grid, dtype=np.uint8)
+        self.rng.shuffle(grid)
+        return grid.reshape(grid_length, grid_length)
 
     def get_neighborhoods(self, grid_length):
         neighborhoods = []
@@ -41,9 +45,9 @@ class ABM:
                 for dr in range(-self.local_radius, self.local_radius + 1):
                     for dc in range(-self.local_radius, self.local_radius + 1):
                         if abs(dr) + abs(dc) <= self.local_radius and (dr != 0 or dc != 0):
-                            neighbors.append(
-                                ((row + dr) % self.grid_length, (col + dc) % self.grid_length)
-                            )
+                            nr, nc = row + dr, col + dc
+                            if 0 <= nr < grid_length and 0 <= nc < grid_length:
+                                neighbors.append((nr, nc))
                 neighborhoods[row].append(neighbors)
         return neighborhoods
 
@@ -52,44 +56,54 @@ class ABM:
         return total / len(neighbor_strategies)
 
     def step(self):
-        reproductions = [0] * self.num_strategies
-        for i in self.rng.permutation(self.grid_length * self.grid_length):
-            row, col = divmod(i, self.grid_length)
-            focal_strategy = self.grid[row, col]
-            neighbors = self.neighborhoods[row][col]
-            neighbor_strategies = [self.grid[nr, nc] for nr, nc in neighbors]
-            payoff = self.calculate_payoff(focal_strategy, neighbor_strategies)
-            if payoff > self.rng.random():
-                nr, nc = neighbors[self.rng.integers(len(neighbors))]
-                self.grid[nr, nc] = focal_strategy
-                reproductions[focal_strategy] += 1
+        # Fill in fitness of each grid square
+        fitness_grid = np.zeros(shape=(self.grid_length, self.grid_length))
+        for row in range(self.grid_length):
+            for col in range(self.grid_length):
+                focal_strategy = self.grid[row, col]
+                neighbors = self.neighborhoods[row][col]
+                neighbor_strategies = [self.grid[nr, nc] for nr, nc in neighbors]
+                fitness_grid[row, col] = self.calculate_payoff(focal_strategy, neighbor_strategies)
+        # Update grid with biased selection
+        new_grid = np.zeros(shape=(self.grid_length, self.grid_length), dtype=np.uint8)
+        for row in range(self.grid_length):
+            for col in range(self.grid_length):
+                candidates = self.neighborhoods[row][col] + [(row, col)]
+                strategies = [self.grid[nr, nc] for nr, nc in candidates]
+                fitnesses = [fitness_grid[nr, nc] for nr, nc in candidates]
+                sum_fitnesses = np.sum(fitnesses)
+                fitness_probs = fitnesses / sum_fitnesses if sum_fitnesses > 0 else None
+                new_grid[row, col] = self.rng.choice(strategies, p=fitness_probs)
+        # Update tracking parameters
+        self.grid = new_grid
+        self.timestep += 1
+
+    def run(self):
+        self.grid_history.append(self.grid.copy())
         self.frequency_history.append(
             np.bincount(self.grid.flatten(), minlength=self.num_strategies)
         )
-        self.reproduction_history.append(reproductions)
-        self.timestep += 1
-
-    def write_grid(self, timestep):
-        with open(f"{self.save_loc}/coords.csv", "a") as f:
-            coords = list(np.ndindex(self.grid.shape))
-            for r, c in coords:
-                f.write(f"{timestep},{c},{r},{self.grid[r, c]}\n")
-
-    def run(self):
-        self.write_grid(0)
         for i in range(1, self.steps + 1):
             self.step()
-            if i % self.grid_save_freq == 0:
-                self.write_grid(i)
+            if i % self.write_freq == 0:
+                self.grid_history.append(self.grid.copy())
+                self.frequency_history.append(
+                    np.bincount(self.grid.flatten(), minlength=self.num_strategies)
+                )
 
     def save(self):
         with open(f"{self.save_loc}/summary.csv", "w") as f:
-            f.write("time,strategy,frequency,reproductions\n")
-            for i in range(self.steps):
+            f.write("time,strategy,frequency\n")
+            for i, t in enumerate(range(0, self.steps + self.write_freq, self.write_freq)):
                 for j in range(self.num_strategies):
                     freq = self.frequency_history[i][j]
-                    repro = self.reproduction_history[i][j]
-                    f.write(f"{i},{j},{freq},{repro}\n")
+                    f.write(f"{t},{j},{freq}\n")
+        with open(f"{self.save_loc}/coords.csv", "w") as f:
+            f.write("time,x,y,strategy\n")
+            for i, t in enumerate(range(0, self.steps + self.write_freq, self.write_freq)):
+                coords = list(np.ndindex(self.grid_history[i].shape))
+                for r, c in coords:
+                    f.write(f"{t},{c},{r},{self.grid_history[i][r, c]}\n")
 
 
 def main():
