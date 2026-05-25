@@ -25,7 +25,7 @@ def sample_three_strategy(seed, num_samples):
         ["P_00", "P_01", "P_02", "P_10", "P_11", "P_12"],
         [0.05, 0.05, 0.05, 0.05, 0.05, 0.05],
         [0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
-        [False] * 8,
+        [False] * 6,
         seed=seed,
     )
     return samples
@@ -221,7 +221,7 @@ def main():
     parser.add_argument("-samples", "--num_samples", type=int, default=100)
     parser.add_argument("-l", "--grid", type=int, default=100)
     parser.add_argument("-r", "--radius", type=int, default=1)
-    parser.add_argument("-write", "--write_freq", type=int, default=5000)
+    parser.add_argument("-write", "--write_freq", type=int, default=500)
     parser.add_argument("-steps", "--steps", type=int, default=5000)
     args = parser.parse_args()
 

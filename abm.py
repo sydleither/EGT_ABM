@@ -20,6 +20,7 @@ class ABM:
         )
         self.grid_save_freq = grid_save_freq
         self.steps = steps
+        self.neighborhoods = self.get_neighborhoods(grid_length)
         # Internal state tracking
         self.timestep = 0
         self.grid = self.rng.choice(
@@ -31,13 +32,20 @@ class ABM:
         with open(f"{self.save_loc}/coords.csv", "w") as f:
             f.write("time,x,y,strategy\n")
 
-    def get_neighbors(self, row, col):
-        neighbors: list[tuple[int, int]] = []
-        for dr in range(-self.local_radius, self.local_radius + 1):
-            for dc in range(-self.local_radius, self.local_radius + 1):
-                if abs(dr) + abs(dc) <= self.local_radius and (dr != 0 or dc != 0):
-                    neighbors.append(((row + dr) % self.grid_length, (col + dc) % self.grid_length))
-        return neighbors
+    def get_neighborhoods(self, grid_length):
+        neighborhoods = []
+        for row in range(grid_length):
+            neighborhoods.append([])
+            for col in range(grid_length):
+                neighbors = []
+                for dr in range(-self.local_radius, self.local_radius + 1):
+                    for dc in range(-self.local_radius, self.local_radius + 1):
+                        if abs(dr) + abs(dc) <= self.local_radius and (dr != 0 or dc != 0):
+                            neighbors.append(
+                                ((row + dr) % self.grid_length, (col + dc) % self.grid_length)
+                            )
+                neighborhoods[row].append(neighbors)
+        return neighborhoods
 
     def calculate_payoff(self, focal_strategy, neighbor_strategies):
         total = sum(self.payoff_matrix[focal_strategy, s] for s in neighbor_strategies)
@@ -48,7 +56,7 @@ class ABM:
         for i in self.rng.permutation(self.grid_length * self.grid_length):
             row, col = divmod(i, self.grid_length)
             focal_strategy = self.grid[row, col]
-            neighbors = self.get_neighbors(row, col)
+            neighbors = self.neighborhoods[row][col]
             neighbor_strategies = [self.grid[nr, nc] for nr, nc in neighbors]
             payoff = self.calculate_payoff(focal_strategy, neighbor_strategies)
             if payoff > self.rng.random():
