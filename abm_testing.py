@@ -55,8 +55,8 @@ def run_experiment(save_loc, args):
             init_freq_0 = random.uniform(0.1, 0.9)
             init_freq = [init_freq_0, 1 - init_freq_0]
         else:
-            init_freq_0 = random.uniform(0.1, 0.9)
-            init_freq_2 = random.uniform(0.99, 0.999)
+            init_freq_0 = round(random.uniform(0.1, 0.9), 2)
+            init_freq_2 = round(random.uniform(0.99, 0.999), 3)
             init_freq = [
                 (1 - init_freq_2) * init_freq_0,
                 (1 - init_freq_2) * (1 - init_freq_0),
@@ -189,7 +189,6 @@ def analyze_experiment(save_loc, strategies):
         if os.path.isfile(f"{save_loc}/{sample}"):
             continue
         df_s = pd.read_csv(f"{save_loc}/{sample}/summary.csv")
-        df_s = df_s[df_s["time"] % 100 == 0]
         config = json.load(open(f"{save_loc}/{sample}/config.json"))
         payoff = np.array(config["payoff"]).reshape(
             len(config["init_freq"]), len(config["init_freq"])

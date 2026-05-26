@@ -32,6 +32,10 @@ class ABM:
         for i, freq in enumerate(init_freqs):
             num_type = int(np.round(freq * grid_length**2))
             grid.extend([i] * num_type)
+        if len(grid) < grid_length**2:
+            grid.append(self.num_strategies - 1)
+        if len(grid) > grid_length**2:
+            del grid[-1]
         grid = np.array(grid, dtype=np.uint8)
         self.rng.shuffle(grid)
         return grid.reshape(grid_length, grid_length)

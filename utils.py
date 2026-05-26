@@ -35,7 +35,7 @@ def create_run_cmd(
     else:
         payoff = " ".join(
             [
-                f"{x:5.3f}"
+                f"{x:7.5f}"
                 for x in [
                     sample["P_00"],
                     sample["P_01"],
