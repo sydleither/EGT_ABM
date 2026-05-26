@@ -23,7 +23,7 @@ def sample_three_strategy(seed, num_samples):
     samples = latin_hypercube_sample(
         num_samples,
         ["P_00", "P_01", "P_10", "P_11"],
-        [1, 1, 1, 1],
+        [2, 2, 2, 2],
         [4, 4, 4, 4],
         [False] * 4,
         seed=seed,
@@ -56,14 +56,14 @@ def run_experiment(save_loc, args):
             init_freq = [init_freq_0, 1 - init_freq_0]
         else:
             init_freq_0 = round(random.uniform(0.1, 0.9), 2)
-            init_freq_2 = round(random.uniform(0.99, 0.999), 3)
+            init_freq_2 = 0.99
             init_freq = [
                 (1 - init_freq_2) * init_freq_0,
                 (1 - init_freq_2) * (1 - init_freq_0),
                 init_freq_2,
             ]
-            sample["P_02"] = 2
-            sample["P_12"] = 2
+            sample["P_02"] = 3
+            sample["P_12"] = 3
             sample["P_20"] = 1
             sample["P_21"] = 1
             sample["P_22"] = 0
